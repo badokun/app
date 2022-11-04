@@ -231,7 +231,7 @@ If you already have a Postgres database in use, you can skip this section and ju
 Run a Postgres Docker container as your Postgres database server. Make sure to replace `myuser` and `mypassword` with something more secret.
 
 ```bash
-docker run -d \
+sudo docker run -d \
     --name sl-db \
     -e POSTGRES_PASSWORD=mypassword \
     -e POSTGRES_USER=myuser \
@@ -246,7 +246,7 @@ docker run -d \
 To test whether the database operates correctly or not, run the following command:
 
 ```bash
-docker exec -it sl-db psql -U myuser simplelogin
+sudo docker exec -it sl-db psql -U myuser simplelogin
 ```
 
 you should be logged in the postgres console. Type `exit` to exit postgres console.
@@ -416,7 +416,7 @@ POSTFIX_SERVER=10.0.0.1
 Before running the webapp, you need to prepare the database by running the migration:
 
 ```bash
-docker run --rm \
+sudo docker run --rm \
     --name sl-migration \
     -v $(pwd)/sl:/sl \
     -v $(pwd)/sl/upload:/code/static/upload \
@@ -432,7 +432,7 @@ This command could take a while to download the `simplelogin/app` docker image.
 Init data
 
 ```bash
-docker run --rm \
+sudo docker run --rm \
     --name sl-init \
     -v $(pwd)/sl:/sl \
     -v $(pwd)/simplelogin.env:/code/.env \
@@ -445,7 +445,7 @@ docker run --rm \
 Now, it's time to run the `webapp` container!
 
 ```bash
-docker run -d \
+sudo docker run -d \
     --name sl-app \
     -v $(pwd)/sl:/sl \
     -v $(pwd)/sl/upload:/code/static/upload \
@@ -461,7 +461,7 @@ docker run -d \
 Next run the `email handler`
 
 ```bash
-docker run -d \
+sudo docker run -d \
     --name sl-email \
     -v $(pwd)/sl:/sl \
     -v $(pwd)/sl/upload:/code/static/upload \
@@ -477,7 +477,7 @@ docker run -d \
 And finally the `job runner`
 
 ```bash
-docker run -d \
+sudo docker run -d \
     --name sl-job-runner \
     -v $(pwd)/sl:/sl \
     -v $(pwd)/sl/upload:/code/static/upload \
@@ -525,19 +525,19 @@ By default, new accounts are not premium so don't have unlimited alias. To make 
 please go to the database, table "users" and set "lifetime" column to "1" or "TRUE":
 
 ```
-docker exec -it sl-db psql -U myuser simplelogin
+sudo docker exec -it sl-db psql -U myuser simplelogin
 UPDATE users SET lifetime = TRUE;
 exit
 ```
 
-Once you've created all your desired login accounts, add these lines to `/simplelogin.env` to disable further registrations:
+Once you've created all your desired login accounts, add these lines to `$(pwd)/simplelogin.env` to disable further registrations:
 
 ```
 DISABLE_REGISTRATION=1
 DISABLE_ONBOARDING=true
 ```
 
-Then restart the web app to apply: `docker restart sl-app`
+Then restart the web app to apply: `sudo docker restart sl-app`
 
 ### Donations Welcome
 
