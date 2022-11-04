@@ -539,6 +539,71 @@ DISABLE_ONBOARDING=true
 
 Then restart the web app to apply: `sudo docker restart sl-app`
 
+### Self-hosting at home
+
+When hosting at home you may find that your ISP blocks outbound traffic on port 25. In order to workaround this you need to setup email relaying. Instead of sending out emails from home you will now be relaying it thru an external provider on an alternative port (e.g. 587). You may use a free provider such as https://www.mailjet.com to accomplish this.
+
+#### Confirm if your outbound traffic is blocked
+
+Install `traceroute` by running `sudo apt install traceroute`.
+
+Run `sudo traceroute -n -T -p 443 www.google.com`. This command should finish quickly with around 10 hops (lines), indicating the flow of traffic.
+
+Run `sudo traceroute -n -T -p 25 mail.protonmail.ch`. Notice how the traffic stops flowing after a certain hop. Comparing the output from the two commands will indicate where the traffic is being blocked. 
+
+
+Sign up for a free account and head over to the domain settings (https://app.mailjet.com/account/domain) to configure the required DNS settings (preventing your mail from going into junk folders). Some of the settings will override what has been mentioned earlier in this guide.
+
+![Mailjet Domain Authentication](docs/mailjet-domain-auth.png)
+
+Update your configuration `sudo nano /etc/postfix/main.cf` to include the following lines at the top:
+
+```
+smtp_sender_dependent_authentication = yes
+smtp_sasl_auth_enable = yes
+smtp_sasl_security_options = noanonymous
+smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
+relayhost = [in-v3.mailjet.com]:587
+smtp_use_tls = yes
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+```
+
+The `relayhost = [in-v3.mailjet.com]:587` above is what was provided on the https://app.mailjet.com/auth/get_started/developer page but may differ for each user.
+
+> Note: You do not need to follow the instructions on mailjet to include `sender_dependent_relayhost_maps = hash:/etc/postfix/sender_relay`, instead we will relay all by including `relayhost = [in-v3.mailjet.com]:587`
+
+Get your API keys by going to https://app.mailjet.com/account/apikeys
+
+![Mailjet API Keys](docs/api-keys.png)
+
+Create a credentials file, `sudo nano /etc/postfix/sasl_passwd`. Update `@example.com` with your domain.
+
+```
+@example.com apikey:secretkey
+```
+
+Run the following for the settings to take affect:
+
+```
+cd /etc/postfix
+sudo chmod 600 sasl_passwd
+sudo chown root:root sasl_passwd
+sudo postmap sasl_passwd sender_relay
+sudo postfix reload
+```
+
+Sending a test mail (update `From: sender@example.com` to any address using your domain)
+
+```
+sudo apt install mailutils
+echo "This is the email body!" | mail -s "Subject of your email" -a "From: sender@example.com" receiver@example.com
+```
+
+> Tail the logs to see what's going on: `sudo tail /var/log/mail.log -f`
+
+Reference article: https://www.linuxfordevices.com/tutorials/ubuntu/smtp-relay-on-ubuntu
+
+
 ### Donations Welcome
 
 You don't have to pay anything to SimpleLogin to use all its features.
