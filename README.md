@@ -576,10 +576,10 @@ Get your API keys by going to https://app.mailjet.com/account/apikeys
 
 ![Mailjet API Keys](docs/api-keys.png)
 
-Create a credentials file, `sudo nano /etc/postfix/sasl_passwd`. Update `@example.com` with your domain.
+Create a credentials file, `sudo nano /etc/postfix/sasl_passwd`. Update `@mydomain.com` with your domain.
 
 ```
-@example.com apikey:secretkey
+@mydomain.com apikey:secretkey
 ```
 
 Run the following for the settings to take affect:
@@ -592,11 +592,11 @@ sudo postmap sasl_passwd sender_relay
 sudo postfix reload
 ```
 
-Sending a test mail (update `From: sender@example.com` to any address using your domain)
+Sending a test mail (update `From: sender@mydomain.com` to any address using your domain)
 
 ```
 sudo apt install mailutils
-echo "This is the email body!" | mail -s "Subject of your email" -a "From: sender@example.com" receiver@example.com
+echo "This is the email body!" | mail -s "Subject of your email" -a "From: sender@mydomain.com" receiver@mydomain.com
 ```
 
 > Tail the logs to see what's going on: `sudo tail /var/log/mail.log -f`
