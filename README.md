@@ -616,6 +616,7 @@ Below are pointers to different topics:
 
 - [Troubleshooting](docs/troubleshooting.md)
 - [Enable SSL](docs/ssl.md)
+- [Reverse Proxy](docs/reverse-proxy-caddy.md)
 - [UFW - uncomplicated firewall](docs/ufw.md)
 - [SES - Amazon Simple Email Service](docs/ses.md)
 - [Upgrade existing SimpleLogin installation](docs/upgrade.md)
