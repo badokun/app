@@ -32,11 +32,7 @@ app.mydomain.com {
         # file_server
 
         # Another common task is to set up a reverse proxy:
-        reverse_proxy https://xxx.xxx.xxx.xxx:7443 {
-            transport http {
-                tls_insecure_skip_verify
-            }
-        }
+        reverse_proxy https://xxx.xxx.xxx.xxx:7443
 }
 ```
 

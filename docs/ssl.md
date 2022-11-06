@@ -16,6 +16,135 @@ sudo certbot --nginx
 
 After this step, you should see some "managed by Certbot" lines in `/etc/nginx/sites-enabled/simplelogin`
 
+## Using Certbot when port 80/443 is blocked
+
+Reference: https://www.digitalocean.com/community/tutorials/how-to-acquire-a-let-s-encrypt-certificate-using-dns-validation-with-acme-dns-certbot-on-ubuntu-18-04
+
+Install certbox
+
+```
+sudo apt-add-repository ppa:certbot/certbot
+sudo apt install certbot
+```
+
+Verify install
+
+```
+certbot --version
+```
+
+Should return something like:
+
+```
+certbot 0.40.0
+```
+
+Install acme-dns-certbot
+
+```
+wget https://github.com/joohoi/acme-dns-certbot-joohoi/raw/master/acme-dns-auth.py
+```
+
+Mark the script as executable
+
+```
+chmod +x acme-dns-auth.py
+```
+
+Update script to use Python3
+
+```
+nano acme-dns-auth.py
+```
+
+Add a `3` to the end of the first line:
+
+```
+#!/usr/bin/env python3
+...
+```
+
+Move the script into the Certbot Let's Encrypt directory
+
+```
+sudo mv acme-dns-auth.py /etc/letsencrypt/
+```
+
+### Setting Up acme-dns-certbot
+
+Run Certbot to force it to issue a certificate using DNS validation. Replace `mydomain.com` with your domain name.
+
+```
+sudo certbot certonly --manual --manual-auth-hook /etc/letsencrypt/acme-dns-auth.py --preferred-challenges dns --debug-challenges -d \*.mydomain.com -d mydomain.com
+```
+
+Create a new CNAME entry as instructed:
+
+```
+Running manual-auth-hook command: /etc/letsencrypt/acme-dns-auth.py
+Output from manual-auth-hook command acme-dns-auth.py:
+Please add the following CNAME record to your main DNS zone:
+_acme-challenge.mydomain.com CNAME xxxxb2c0-xxxx-1122-4433-5d570f6bxxxx.auth.acme-dns.io.
+```
+
+The certificate should now be created at `/etc/letsencrypt/live/mydomain.com/fullchain.pem` and private key at `/etc/letsencrypt/live/mydomain.com/privkey.pem`
+
+See [Securing Postfix](#securing_postfix) below for the next steps. Remember to restart Postfix with `sudo systemctl restart postfix` when done.
+
+### Updating Nginx
+
+Instead of running `sudo certbot --nginx`, execute the following:
+
+Create NGINX snippet
+
+```
+sudo nano /etc/nginx/snippets/dns-challenge-certbot.conf
+```
+
+Save the following text:
+```
+ssl_certificate /etc/letsencrypt/live/mydomain.com/fullchain.pem;
+ssl_certificate_key /etc/letsencrypt/live/mydomain.com/privkey.pem;
+
+ssl_protocols TLSv1.2;
+ssl_prefer_server_ciphers on;
+ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-SHA384;
+ssl_session_timeout 10m;
+ssl_session_cache shared:SSL:10m;
+ssl_session_tickets off;
+ssl_stapling on;
+ssl_stapling_verify on;
+resolver 8.8.8.8 8.8.4.4 valid=300s;
+resolver_timeout 5s;
+add_header X-Frame-Options DENY;
+add_header X-Content-Type-Options nosniff;
+add_header X-XSS-Protection "1; mode=block";
+```
+
+Edit NGINX configuration:
+
+```
+sudo nano /etc/nginx/sites-enabled/simplelogin
+```
+
+Add the snippet to the configuration. Should look like this:
+
+```
+server {
+    server_name app.mydomain.com;
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    include snippets/dns-challenge-certbot.conf;
+
+    location / {
+        proxy_pass http://localhost:7777;
+    }
+}
+```
+
+Restart NGINX by running `sudo systemctl reload nginx`
+
 ## Alternatively use self-signed certificate
 
 > Unique approach when doing external forwarding
@@ -83,7 +212,7 @@ server {
 
 Restart NGINX by running `sudo systemctl reload nginx`
 
-### Securing Postfix
+### <a name="securing_postfix"></a> Securing Postfix
 
 Now let's use the new certificate for our Postfix.
 
